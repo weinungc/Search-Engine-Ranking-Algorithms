@@ -43,12 +43,20 @@
             <div class="col-md-10 col-lg-8 col-xl-7 mx-auto">
                 <form action="/Search" method="get">
                     <div class="form-row">
-                        <div class="col-12 col-md-9 mb-2 mb-md-0">
+                        <div class="col-12 col-md-7 mb-2 mb-md-0">
                             <input id="q" name="q" type="text" class="form-control form-control-lg" placeholder="">
                             <input type="hidden" id="offset" name="offset" value="0">
                         </div>
                         <div class="col-12 col-md-3">
                             <button type="submit" class="btn btn-block btn-lg btn-primary">Search</button>
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="radio-inline">
+                                <input type="radio" name="algorithm" value="lucene" checked>Lucene
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="algorithm" value="pagerank">PageRank
+                            </label>
                         </div>
                     </div>
                 </form>

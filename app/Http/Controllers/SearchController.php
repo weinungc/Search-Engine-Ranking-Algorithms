@@ -30,7 +30,13 @@ class SearchController extends Controller
         // problems or a query parsing error)
         try
         {
-            $results = $solr->search($query, $offset, $limit);
+            if ($request->input('algorithm') == "lucene"){
+                $results = $solr->search($query, $offset, $limit);
+            }else{
+                $pageRankParameters = array('sort'=>'pageRankFile desc');
+                $results = $solr->search($query, $offset, $limit,$pageRankParameters);
+            }
+
 
         }
         catch (Exception $e)
@@ -40,6 +46,7 @@ class SearchController extends Controller
 
         return view('result')
             ->with('offset', $offset)
+            ->with('algorithm', $request->input('algorithm'))
             ->with('query', $request->input('q'))
             ->with('results',$results );
 
