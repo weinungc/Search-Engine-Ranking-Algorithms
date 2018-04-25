@@ -20,6 +20,87 @@
     <!-- Custom styles for this template -->
     <link href="{{ URL::asset('css/landing-page.min.css') }}" rel="stylesheet">
 
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <script>
+
+        $(function(){ // this will be called when the DOM is ready
+            $('#q').keyup(function() {
+
+                var q = $("#q").val();
+                var res = q.split(" ");
+
+                if(res.length>1){
+                    console.log("larger than one!!");
+                    var new_auto = "";
+                    for(var i=0;i<res.length;i++){
+                        const idx = i;
+//                        var new_auto = "";
+                        if(idx === res.length-1){
+                            $.getJSON("http://localhost:8983/solr/myexample/suggest?q=" +res[i],function (data) {
+                                console.log("last one");
+                                var temp = data.suggest.suggest[res[idx]].suggestions.map(obj => obj.term);
+                                new_auto = new_auto+ " ";
+
+                                console.log("here: " +new_auto);
+                                console.log(temp);
+                                for(var j =0;j<temp.length;j++){
+                                    temp[j] = new_auto.concat(temp[j]);
+//                                    console.log("temp[i]: "+ temp[j]);
+
+                                }
+
+                                console.log(temp);
+
+                                $( "#q" ).autocomplete({
+                                    source: function (result, response) {
+                                        response(temp);
+                                    }
+                                });
+
+                            })
+
+                        }else{
+                            $.getJSON("http://localhost:8983/solr/myexample/suggest?q=" +res[idx],function (data) {
+                                console.log("not last one");
+                                console.log(res[idx]);
+                                console.log(data);
+                                var temp = data.suggest.suggest[res[idx]].suggestions.map(obj => obj.term);
+                                if (typeof(temp[0]) != "undefined"){
+                                    new_auto = new_auto+" "+ temp[0];
+                                    console.log("new auto: "+new_auto);
+                                }
+
+                            })
+
+                        }
+                    }
+
+
+                }
+                // only one length
+                else{
+                    $.getJSON( "http://localhost:8983/solr/myexample/suggest?q="+ q, function( data ) {
+                        var availableTags = data.suggest.suggest[q].suggestions.map(obj => obj.term);
+                        $( "#q" ).autocomplete({
+//                            source: availableTags
+                            source: function (result, response) {
+                                response(availableTags);
+                            }
+                        });
+
+                    });
+
+                }
+
+
+            });
+        });
+    </script>
+
+
 </head>
 
 <body>
@@ -64,6 +145,7 @@
         </div>
     </div>
 </header>
+
 
 <!-- Footer -->
 {{--<footer class="footer bg-light">--}}
@@ -113,7 +195,7 @@
 {{--</footer>--}}
 
 <!-- Bootstrap core JavaScript -->
-<script src="{{ URL::asset('vendor/jquery/jquery.min.js') }}"></script>
+{{--<script src="{{ URL::asset('vendor/jquery/jquery.min.js') }}"></script>--}}
 <script src="{{ URL::asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
 </body>

@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Solr\Apache_Solr_Service;
 use Illuminate\Http\Request;
+use App\Solr\SpellCorrector;
+use App\Solr\Htmldom;
 
 class SearchController extends Controller
 {
     public function search(Request $request){
         $limit = 10;
-        $query = $request->input('q');
+        $query = trim($request->input('q'));
+        $lowerquery = strtolower($query);
         $offset= $request->input('offset');
+        $csvmap = array_map('str_getcsv',file('UrlToHtml_NBCNews.csv'));
+        $words = explode(" ", $lowerquery);
 
         if($query){
 
@@ -37,7 +42,75 @@ class SearchController extends Controller
                 $results = $solr->search($query, $offset, $limit,$pageRankParameters);
             }
 
+            //snippet
+            foreach ($results ->response->docs as $index=>$doc){
+                $id = $doc-> id;
+                $id = str_replace("/Users/chaoweinung/Downloads/solr-7.2.1/NBC_NEWS/HTML files/","",$id);
+                $location = public_path('/files/').$id;
 
+                //add url
+                foreach ($csvmap as $key){
+                    if ($id == $key[0]){
+                        $results -> response->docs[$index]->og_url = $key[1];
+                        break;
+                    }
+                }
+                $bihtml = new Htmldom($location);
+                $html = $bihtml ->plaintext;
+
+                $sentences = explode(".", $html);
+                $snippet ="";
+
+                //whole query
+                foreach($sentences as $sentence){
+                    //with full word
+                    if(strlen($lowerquery)!= 0 &&strpos( strtolower($sentence), $lowerquery ) !== false){
+                        $snippet .= $sentence;
+                        if(strlen($snippet)>160)
+                            break;
+                    }
+                }
+                // all match
+                if(strlen($snippet)<160){
+                    foreach($sentences as $sentence){
+                        $sentence=strip_tags($sentence);
+                        if($this->match_all($sentence, $words)){
+                            $snippet = $sentence;
+                            if(strlen($snippet)>160)
+                                break;
+                        }
+
+                    }
+                }
+                //one match
+                if(strlen($snippet)<160){
+                    foreach($sentences as $sentence){
+                        $sentence=strip_tags($sentence);
+                        if($this->match($sentence, $words)){
+                            $snippet = $sentence;
+                            if(strlen($snippet)>160)
+                                break;
+                        }
+
+                    }
+                }
+
+                if($snippet ===""){
+                    $snippet ="NULL";
+                }
+                $results -> response->docs[$index]->snippet = $snippet;
+
+            }
+
+
+            //spelling check
+            $spellcheck ='';
+
+            foreach ($words as  $word){
+                $spellcheck = $spellcheck." ". SpellCorrector::correct($word);
+            }
+            if(strcmp($lowerquery,trim($spellcheck)) == 0)
+                $spellcheck = null;
         }
         catch (Exception $e)
         {
@@ -45,15 +118,35 @@ class SearchController extends Controller
         }
 
         return view('result')
+            ->with('spellcheck',$spellcheck)
             ->with('offset', $offset)
             ->with('algorithm', $request->input('algorithm'))
-            ->with('query', $request->input('q'))
+            ->with('query', $query)
+            ->with('words',$words)
             ->with('results',$results );
+    }
 
+    function match_all($haystack,$needles)
+    {
+        if(empty($needles)){
+            return false;
+        }
 
+        foreach($needles as $needle) {
+            if (strpos(strtolower($haystack), $needle) == false) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-
-
-
+    function match($haystack,$needles)
+    {
+        foreach($needles as $needle){
+            if (strpos(strtolower($haystack), $needle) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 }
