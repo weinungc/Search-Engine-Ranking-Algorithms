@@ -38,7 +38,7 @@ bin/solr create -c myexample
 bin/post –c <core_name> -filetypes html <path_to_crawl_folder>/
 ```
 
-5. you need to put big.txt csv and html_folder under Search-Engine-Ranking-Algorithms/public
+5. you need to put big.txt csv and html_folder(name files) under Search-Engine-Ranking-Algorithms/public
 6. add following in solrconfig.xml(which is in your project) and reload solr in [http://localhost:8983](http://localhost:8983) select your core and click reload
 ```
 <!-- edited -->
